@@ -1,0 +1,13 @@
+{
+  "name": "github-ai-template",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Agent-driven project template",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,0 +1,31 @@
+name: Release
+
+# On every push to main, release-please updates a "Release PR" containing the next version and the
+# changelog generated from Conventional Commit messages. Merging that PR creates the tag and GitHub Release.
+# It uses the agent GitHub App token so CI runs on the Release PR (the default GITHUB_TOKEN would not trigger it).
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create agent token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+
+      - uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

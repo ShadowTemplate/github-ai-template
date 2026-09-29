@@ -1,0 +1,7 @@
+# Human gate for the files that control the agents themselves.
+# Replace @your-github-username, uncomment, and enable
+# "Require review from Code Owners" in the ruleset (see SETUP.md).
+#
+# /.github/                     @your-github-username
+# /CLAUDE.md                    @your-github-username
+# /release-please-config.json   @your-github-username

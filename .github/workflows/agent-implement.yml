@@ -248,7 +248,7 @@ jobs:
         run: |
           if [ -f .agent-reply.md ]; then
             gh api "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments/${{ github.event.comment.id }}/replies" \
-              -f body=@.agent-reply.md
+              -F body=@.agent-reply.md
             rm -f .agent-reply.md
           else
             echo "No .agent-reply.md written; nothing to post."

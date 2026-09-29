@@ -1,0 +1,45 @@
+name: Bug (agent-ready)
+description: Something is broken. Give enough detail for an agent to reproduce and fix it.
+title: "fix: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happens
+      description: Include exact error messages or output.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should happen
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps, input, or a failing command.
+      value: |
+        1.
+        2.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How do we know it is fixed? A regression test is always expected.
+      value: |
+        - [ ] A test reproduces the bug and now passes
+        - [ ]
+    validations:
+      required: true
+  - type: textarea
+    id: hints
+    attributes:
+      label: Hints
+      description: Suspected cause, relevant files, logs.
+    validations:
+      required: false

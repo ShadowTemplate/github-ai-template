@@ -1,0 +1,42 @@
+name: Task (agent-ready)
+description: A feature or change to be implemented by an AI agent.
+title: "feat: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Write this as if briefing a capable colleague who has never seen the project.
+        A vague issue produces a vague PR. Add the `agent-ready` label when this is ready to be picked up.
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should change, and why does it matter?
+      placeholder: Users can export their report as CSV so they can open it in a spreadsheet.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: A checklist of concrete, testable outcomes. The reviewer agent checks the PR against this.
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: What the agent must NOT do in this issue.
+    validations:
+      required: false
+  - type: textarea
+    id: hints
+    attributes:
+      label: Hints
+      description: Relevant files, existing patterns to follow, constraints, links.
+    validations:
+      required: false

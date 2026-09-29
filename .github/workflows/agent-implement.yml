@@ -114,14 +114,21 @@ jobs:
       # issue_comment fires for PR conversation comments too, but unlike a `pull_request` event it does
       # NOT put the PR's branch in github.ref - that always resolves to the default branch. Without this,
       # checkout below would silently check out main and the agent would edit/push the wrong code.
+      # For a PR from a fork, headRefName names a branch that only exists in the fork, not here - proceeding
+      # would either fail loudly or, worse, silently check out an unrelated same-named branch in this repo.
+      # So fork PRs are refused outright rather than mis-checked-out.
       - name: Resolve ref to check out
         id: ref
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           if [ -n "${{ github.event.issue.pull_request.url }}" ]; then
-            branch=$(gh pr view "${{ github.event.issue.number }}" --repo "$GITHUB_REPOSITORY" --json headRefName --jq .headRefName)
-            echo "ref=$branch" >> "$GITHUB_OUTPUT"
+            pr_json=$(gh pr view "${{ github.event.issue.number }}" --repo "$GITHUB_REPOSITORY" --json headRefName,isCrossRepository)
+            if [ "$(jq -r .isCrossRepository <<<"$pr_json")" = "true" ]; then
+              echo "::error::PR #${{ github.event.issue.number }} is from a fork; refusing to check it out for @claude comments." >&2
+              exit 1
+            fi
+            echo "ref=$(jq -r .headRefName <<<"$pr_json")" >> "$GITHUB_OUTPUT"
           else
             echo "ref=${{ github.ref }}" >> "$GITHUB_OUTPUT"
           fi
@@ -160,13 +167,17 @@ jobs:
                `gh issue comment` / `gh pr comment` instead of guessing.
           claude_args: |
             --max-turns 40
-            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(gh issue:*),Bash(gh pr:*),Bash(npm:*),Bash(node:*),Bash(npx:*)"
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(npm:*),Bash(node:*),Bash(npx:*)"
+            --disallowedTools "Bash(git push --force*),Bash(git push -f*)"
 
   respond-to-review-comment:
+    # head.repo.full_name differs from base.repo.full_name for a fork PR; refuse those here (job-level,
+    # before any checkout) rather than risk checking out a same-named branch that isn't the real one.
     if: >
       github.event_name == 'pull_request_review_comment' &&
       contains(github.event.comment.body, '@claude') &&
-      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 40
     concurrency:
@@ -221,10 +232,24 @@ jobs:
             3. Make the specific change this comment asks for at that file and line (and elsewhere only if
                the exact same issue recurs). Run the checks listed in CLAUDE.md until they pass.
             4. Commit with Conventional Commits and push to this same branch (do not open a new PR).
-            5. Reply on this same review thread, not as a new top-level comment:
-               `gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments/${{ github.event.comment.id }}/replies -f body="<what you did>"`
-            6. If the request is ambiguous or out of scope per CLAUDE.md, ask a clarifying question there
-               (same API call) instead of guessing.
+            5. Write your reply (what you did, or your clarifying question if the request is ambiguous or
+               out of scope per CLAUDE.md) as the entire contents of a file named `.agent-reply.md` at the
+               repo root. Do not `git add` it. A later workflow step posts it as a reply on this exact
+               review thread - you do not have a tool for posting it yourself.
           claude_args: |
             --max-turns 40
-            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(gh pr:*),Bash(gh api:*),Bash(npm:*),Bash(node:*),Bash(npx:*)"
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(npm:*),Bash(node:*),Bash(npx:*)"
+            --disallowedTools "Bash(git push --force*),Bash(git push -f*)"
+
+      - name: Post the agent's reply on the review thread
+        if: always()
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          if [ -f .agent-reply.md ]; then
+            gh api "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments/${{ github.event.comment.id }}/replies" \
+              -f body=@.agent-reply.md
+            rm -f .agent-reply.md
+          else
+            echo "No .agent-reply.md written; nothing to post."
+          fi

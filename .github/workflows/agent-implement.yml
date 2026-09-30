@@ -161,18 +161,35 @@ jobs:
                - On a PR: you are already on its branch. Commit with Conventional Commits, push to this same
                  branch (do not open a new PR), run the checks from CLAUDE.md, and reply with
                  `gh pr comment ${{ github.event.issue.number }} --body "..."` summarizing what changed.
-                 If the change makes the PR description inaccurate (e.g. it describes old behavior), update
-                 it with `gh pr edit ${{ github.event.issue.number }} --body "..."` - pass the full corrected
-                 body, not a diff. You have no `--title` access; mention it in your reply if the title is
-                 also stale instead of trying to change it.
+                 If the change makes the PR description inaccurate (e.g. it describes old behavior), write
+                 the full corrected body (not a diff) to `.agent-pr-body.md` at the repo root and do not
+                 `git add` it - a later workflow step applies it to the PR for you, since you have no tool
+                 for editing the PR yourself. If the title is also stale, mention that in your reply instead
+                 of trying to change it.
                - On an issue: reply with `gh issue comment`, or implement it following the same steps as the
                  labeled-issue flow if asked to.
             4. If the request is ambiguous or out of scope per CLAUDE.md, ask a clarifying question with
                `gh issue comment` / `gh pr comment` instead of guessing.
           claude_args: |
             --max-turns 40
-            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr edit --body:*),Bash(npm:*),Bash(node:*),Bash(npx:*)"
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(npm:*),Bash(node:*),Bash(npx:*)"
             --disallowedTools "Bash(git push --force*),Bash(git push -f*)"
+
+      # The agent has no gh pr edit access at all (see prompt) - if it wrote a corrected body, apply it
+      # here instead, using the PR number from the trusted webhook payload rather than anything the agent
+      # (or injected issue/PR text) could steer. Only --body is ever touched: title, labels, base branch,
+      # and reviewers stay untouchable regardless of what the file contains.
+      - name: Apply a corrected PR description, if the agent wrote one
+        if: always() && github.event.issue.pull_request.url
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          if [ -f .agent-pr-body.md ]; then
+            gh pr edit "${{ github.event.issue.number }}" --repo "$GITHUB_REPOSITORY" --body-file .agent-pr-body.md
+            rm -f .agent-pr-body.md
+          else
+            echo "No .agent-pr-body.md written; PR description unchanged."
+          fi
 
   respond-to-review-comment:
     # head.repo.full_name differs from base.repo.full_name for a fork PR; refuse those here (job-level,

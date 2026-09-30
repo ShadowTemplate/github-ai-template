@@ -73,7 +73,9 @@ passed. It lists what is still missing at the end. You can also do everything by
 2. Add the label `agent-ready`. Watch Actions > *Agent - implement*.
 3. A PR appears. Check that `CI`, `PR title` and `Agent - review` all ran on it. If they did not, the App token (step 2) is the problem.
 4. Merge it. `Release` opens a Release PR with a changelog entry under **Features**. Merge that to get `v0.1.0`.
-5. Comment `@claude please rename X to Y` on a PR to test the fix loop.
+5. Comment `@claude please rename X to Y` on a PR's Conversation tab to test the fix loop.
+6. Or leave `@claude fix this` as an inline comment on one line in the "Files changed" tab - the agent
+   replies on that same review thread and pushes a fix scoped to that line.
 
 ## Troubleshooting
 

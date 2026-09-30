@@ -4,3 +4,6 @@ node_modules/
 coverage/
 dist/
 .DS_Store
+
+# Scratch file the review-comment agent writes its reply into; a workflow step posts and deletes it.
+.agent-reply.md

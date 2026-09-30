@@ -184,7 +184,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          if [ -f .agent-pr-body.md ]; then
+          if [ -s .agent-pr-body.md ]; then
             gh pr edit "${{ github.event.issue.number }}" --repo "$GITHUB_REPOSITORY" --body-file .agent-pr-body.md
             rm -f .agent-pr-body.md
           else

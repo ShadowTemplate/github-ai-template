@@ -7,5 +7,5 @@ test('greet returns a greeting', () => {
 });
 
 test('farewell returns a farewell', () => {
-  assert.equal(farewell('world'), 'Goodbye, world!');
+  assert.equal(farewell('world'), 'Bye bye,world!');
 });

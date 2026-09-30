@@ -5,5 +5,5 @@ export function greet(name) {
 }
 
 export function farewell(name) {
-  return `Bye bye,${name}!`;
+  return `Bye bye, ${name}!`;
 }

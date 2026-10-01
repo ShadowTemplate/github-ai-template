@@ -5,5 +5,6 @@ coverage/
 dist/
 .DS_Store
 
-# Scratch file the review-comment agent writes its reply into; a workflow step posts and deletes it.
+# Scratch files agent-implement.yml writes; a workflow step applies and deletes them.
 .agent-reply.md
+.agent-pr-body.md
